@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alambika Jesemi — Executive Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card-hover: #222633;
+    --border: #2a2e3d;
+    --text: #e4e6ef;
+    --text-muted: #8b8fa3;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --danger: #ef4444;
+    --danger-bg: rgba(239,68,68,0.12);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245,158,11,0.12);
+    --success: #10b981;
+    --success-bg: rgba(16,185,129,0.12);
+    --info: #3b82f6;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .header h1 span { color: var(--accent-light); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .last-update {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .refresh-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .refresh-btn:hover { background: var(--accent-light); }
+
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+  }
+
+  .kpi-card:hover { background: var(--card-hover); }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .kpi-danger .kpi-value { color: var(--danger); }
+  .kpi-warning .kpi-value { color: var(--warning); }
+  .kpi-success .kpi-value { color: var(--success); }
+  .kpi-info .kpi-value { color: var(--info); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .grid-full {
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .dot-danger { background: var(--danger); }
+  .dot-warning { background: var(--warning); }
+  .dot-success { background: var(--success); }
+  .dot-info { background: var(--info); }
+
+  .table-wrap {
+    overflow-x: auto;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 10px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--card);
+  }
+
+  tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(42,46,61,0.5);
+    white-space: nowrap;
+  }
+
+  tbody tr:hover { background: var(--card-hover); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .badge-danger { background: var(--danger-bg); color: var(--danger); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning); }
+  .badge-success { background: var(--success-bg); color: var(--success); }
+
+  .stock-bar {
+    width: 80px;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  .stock-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 280px;
+  }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-muted);
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 10px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .supplier-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(99,102,241,0.15);
+    color: var(--accent-light);
+  }
+
+  .china-tag {
+    background: rgba(239,68,68,0.12);
+    color: #f87171;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent-light); border-bottom-color: var(--accent); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .search-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 12px;
+    width: 250px;
+    margin-bottom: 16px;
+  }
+
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>Alambika</span> Jesemi — Inventory Dashboard</h1>
+  <div class="header-right">
+    <span class="last-update" id="lastUpdate">Chargement...</span>
+    <button class="refresh-btn" onclick="loadAllData()">Rafraîchir</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">Vue d'ensemble</div>
+  <div class="tab" onclick="switchTab('china')">Fournisseurs Chine</div>
+  <div class="tab" onclick="switchTab('lowstock')">Stock bas</div>
+  <div class="tab" onclick="switchTab('reorder')">Réapprovisionnement</div>
+  <div class="tab" onclick="switchTab('purchases')">Achats</div>
+  <div class="tab" onclick="switchTab('ar')">Comptes à recevoir</div>
+  <div class="tab" onclick="switchTab('clients')">Clients</div>
+</div>
+
+<!-- OVERVIEW TAB -->
+<div id="tab-overview" class="tab-content active">
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-info"></span>Stock par fournisseur (Top 15)</div>
+      <div class="chart-container"><canvas id="chartSupplierStock"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-danger"></span>Produits critiques (sous minimum)</div>
+      <div class="table-wrap" id="criticalTable"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+  <div class="grid-full">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-warning"></span>Distribution des catégories</div>
+      <div class="chart-container"><canvas id="chartCategories"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHINA SUPPLIERS TAB -->
+<div id="tab-china" class="tab-content">
+  <div class="kpi-grid" id="chinaKpi"></div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-danger"></span>Stock par fournisseur chinois</div>
+      <div class="chart-container"><canvas id="chartChinaSuppliers"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-warning"></span>Produits à risque (lead time 3 mois)</div>
+      <div class="table-wrap" id="chinaRiskTable"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+  <div class="grid-full">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-info"></span>Tous les produits — Fournisseurs Chine</div>
+      <input type="text" class="search-input" id="chinaSearch" placeholder="Rechercher SKU, produit..." oninput="filterChinaTable()">
+      <div class="table-wrap" id="chinaFullTable" style="max-height:500px"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOW STOCK TAB -->
+<div id="tab-lowstock" class="tab-content">
+  <div class="kpi-grid" id="lowstockKpi"></div>
+  <div class="grid-full">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-danger"></span>Inventaire — Stock bas</div>
+      <input type="text" class="search-input" id="lowstockSearch" placeholder="Rechercher SKU, produit, fournisseur..." oninput="filterLowStockTable()">
+      <div class="table-wrap" id="lowstockTable" style="max-height:600px"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- REORDER TAB -->
+<div id="tab-reorder" class="tab-content">
+  <div class="kpi-grid" id="reorderKpi"></div>
+  <div class="grid-full">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-warning"></span>Produits à réapprovisionner</div>
+      <input type="text" class="search-input" id="reorderSearch" placeholder="Rechercher..." oninput="filterReorderTable()">
+      <div class="table-wrap" id="reorderTable" style="max-height:600px"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PURCHASES TAB -->
+<div id="tab-purchases" class="tab-content">
+  <div class="kpi-grid" id="purchaseKpi"></div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-info"></span>Dépenses par fournisseur (Top 10)</div>
+      <div class="chart-container"><canvas id="chartPurchaseSuppliers"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-success"></span>Résumé fournisseurs</div>
+      <div class="table-wrap" id="supplierSummaryTable"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNTS RECEIVABLE TAB -->
+<div id="tab-ar" class="tab-content">
+  <div class="kpi-grid" id="arKpi"></div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-danger"></span>Top 15 — Montants dus</div>
+      <div class="chart-container"><canvas id="chartAR"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-warning"></span>Paiements en retard (30+ jours)</div>
+      <div class="table-wrap" id="arLateTable"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+  <div class="grid-full">
+    <div class="panel">
+      <div class="panel-title"><span class="dot dot-info"></span>Tous les comptes avec solde dû</div>
+      <input type="text" class="search-input" id="arSearch" placeholder="Rechercher client..." oninput="filterARTable()">
+      <div class="table-wrap" id="arFullTable" style="max-height:500px"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTS TAB -->
+<div id="tab-clients" class="tab-content">
+  <div class="kpi-grid" id="clientsKpi"></div>
+  <div class="filter-bar" id="clientsFilters">
+    <button class="filter-btn active" onclick="filterClientsView('top')">Top clients</button>
+    <button class="filter-btn" onclick="filterClientsView('grow')">Clients à développer</button>
+    <button class="filter-btn" onclick="filterClientsView('dormant')">En voie d'oubli</button>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title" id="clientsChartTitle"><span class="dot dot-info"></span>Top 15 clients</div>
+      <div class="chart-container"><canvas id="chartClients"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title" id="clientsSummaryTitle"><span class="dot dot-success"></span>Résumé</div>
+      <div class="table-wrap" id="clientsSummaryPanel"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+  <div class="grid-full">
+    <div class="panel">
+      <div class="panel-title" id="clientsTableTitle"><span class="dot dot-info"></span>Liste complète</div>
+      <input type="text" class="search-input" id="clientsSearch" placeholder="Rechercher client..." oninput="filterClientsSearch()">
+      <div class="table-wrap" id="clientsFullTable" style="max-height:500px"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === DATA SOURCE ===
+const API_URL = 'https://script.google.com/macros/s/AKfycbzYpQBVqN5TIBYGHesaRUaOWEgf5tEPurIjuP0cP-HM_iQkriW9LwKOZYO5bq5Aptu1JA/exec';
+
+const CHINA_SUPPLIERS = ['CQJIAN CCS', 'JIA CS', 'SEN CS', 'HGC CS', 'JAT CS', 'YUN CS'];
+function isChinaSupplier(name) {
+  var n = String(name || '').toUpperCase().trim();
+  return CHINA_SUPPLIERS.some(cs => n === cs || n.startsWith(cs + ' ') || n.startsWith(cs));
+}
+
+// Japanese suppliers with prices in JPY — convert to CAD
+const JPY_SUPPLIERS = ['IRON CLAD', 'IKEDA INC', 'NAKAYA CO', 'TAKAYUKI SHIBATA'];
+const JPY_TO_CAD = 0.0093; // ~107 JPY per CAD — adjust as needed
+
+let DATA = {};
+let charts = {};
+
+// === DATA LOADING VIA JSONP (bypasses CORS) ===
+function loadAllData() {
+  document.getElementById('lastUpdate').textContent = 'Chargement en cours...';
+
+  // Remove old script tag if exists
+  var old = document.getElementById('dataScript');
+  if (old) old.remove();
+
+  var script = document.createElement('script');
+  script.id = 'dataScript';
+  script.src = API_URL + '?callback=handleData&t=' + Date.now();
+  script.onerror = function() {
+    document.getElementById('lastUpdate').textContent = 'Erreur de chargement — vérifiez le déploiement Apps Script';
+  };
+  document.body.appendChild(script);
+}
+
+// Fix headers: if first row values look like real headers, remap all rows
+function fixHeaders(rows) {
+  if (!rows || rows.length < 2) return rows;
+  var firstRow = rows[0];
+  var vals = Object.values(firstRow);
+  var kws = ['sku','product','category','supplier','quantity','city','invoice','date','order','stock','price','available','customer','brand','status','reference','minimum','reorder','purchase','sale','discount','on order'];
+  var matches = 0;
+  vals.forEach(function(v) {
+    var vs = String(v).toLowerCase().trim();
+    if (kws.some(function(kw) { return vs.indexOf(kw) !== -1; })) matches++;
+  });
+  if (matches >= 2) {
+    var oldKeys = Object.keys(firstRow);
+    var newKeys = oldKeys.map(function(k) { return String(firstRow[k]).trim(); });
+    return rows.slice(1).map(function(row) {
+      var newRow = {};
+      oldKeys.forEach(function(oldKey, i) { newRow[newKeys[i]] = row[oldKey]; });
+      return newRow;
+    });
+  }
+  return rows;
+}
+
+function handleData(allData) {
+  try {
+    console.log('Données reçues:', Object.keys(allData));
+
+    // Map sheet names to data keys and fix headers
+    // Sort file names so the latest (alphabetically last = most recent date) wins when duplicates exist
+    DATA = { lowStock: [], reordering: [], velocity: [], purchaseOrders: [], supplierSummary: [], customerPayments: [] };
+    var fileNames = Object.keys(allData).sort();
+    var mappedFiles = {};
+    fileNames.forEach(name => {
+      const nl = name.toLowerCase().replace(/[^a-z]/g, '');
+      var fixed = fixHeaders(allData[name]);
+      if (nl.includes('lowstock') || nl.includes('lowonstock')) { DATA.lowStock = fixed; mappedFiles.lowStock = name; }
+      else if (nl.includes('reorder') || nl.includes('productreorder')) { DATA.reordering = fixed; mappedFiles.reordering = name; }
+      else if (nl.includes('velocity')) { DATA.velocity = fixed; mappedFiles.velocity = name; }
+      else if (nl.includes('purchaseorder') || nl.includes('purchaseorderdetail')) { DATA.purchaseOrders = fixed; mappedFiles.purchaseOrders = name; }
+      else if (nl.includes('supplierfinancial') || nl.includes('supplierfin') || nl.includes('purchasesupplier')) { DATA.supplierSummary = fixed; mappedFiles.supplierSummary = name; }
+      else if (nl.includes('customerpayment') || nl.includes('paymentsummary')) { DATA.customerPayments = fixed; mappedFiles.customerPayments = name; }
+      else console.log('Non mappé:', name);
+    });
+    console.log('Fichiers utilisés:', mappedFiles);
+
+    // Use reordering as primary inventory source
+    if (DATA.reordering.length > 0) DATA.inventory = DATA.reordering;
+    else DATA.inventory = DATA.lowStock;
+    console.log('Inventory:', DATA.inventory.length, 'rows');
+    console.log('Reordering:', DATA.reordering.length, 'rows');
+
+    // Normalize column names
+    normalizeData();
+
+    // Filter out non-product items (tax, misc, service items)
+    filterNonProducts();
+
+    // Aggregate per-location rows into one row per SKU
+    aggregateBySku();
+
+    renderOverview();
+    renderChinaTab();
+    renderLowStockTab();
+    renderReorderTab();
+    renderPurchasesTab();
+    renderARTab();
+    renderClientsTab();
+
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent =
+      'Mis à jour: ' + now.toLocaleDateString('fr-CA') + ' ' + now.toLocaleTimeString('fr-CA', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) {
+    console.error('Erreur traitement:', e);
+    document.getElementById('lastUpdate').textContent = 'Erreur: ' + e.message;
+  }
+}
+
+function normalizeData() {
+  // Normalize column names across all datasets with inventory data
+  [DATA.lowStock, DATA.reordering, DATA.inventory].forEach(dataset => {
+    if (!dataset || !dataset.length) return;
+    dataset.forEach(row => {
+      const keys = Object.keys(row);
+      keys.forEach(k => {
+        const kl = k.toLowerCase().trim();
+        if (kl === 'category') row._category = String(row[k] || '');
+        if (kl === 'supplier') row._supplier = String(row[k] || '');
+        if (kl === 'sku') row._sku = String(row[k] || '');
+        if (kl === 'product') row._product = String(row[k] || '');
+        if (kl.includes('available') || kl === 'grand total') row._available = parseNum(row[k]);
+        if (kl.includes('on order')) row._onOrder = parseNum(row[k]);
+        if (kl.includes('purchase price') || kl === 'grand total_3') row._price = parseNum(row[k]);
+        if (kl.includes('reorder q') || kl === 'grand total_4') row._reorderQty = parseNum(row[k]);
+        if (kl.includes('minimum') || kl === 'grand total_5') row._minimum = parseNum(row[k]);
+      });
+      // Fallback: positional mapping for Cin7 format
+      if (row._available === undefined) {
+        const vals = Object.values(row);
+        row._category = row._category || vals[0];
+        row._supplier = row._supplier || vals[1];
+        row._sku = row._sku || vals[2];
+        row._product = row._product || vals[3];
+        row._available = parseNum(vals[4]);
+        row._onOrder = parseNum(vals[5]);
+        row._price = parseNum(vals[6]);
+        row._reorderQty = parseNum(vals[7]);
+        row._minimum = parseNum(vals[8]);
+      }
+      // Convert JPY prices to CAD for Japanese suppliers
+      if (row._supplier && row._price > 0) {
+        var sup = String(row._supplier).toUpperCase();
+        if (JPY_SUPPLIERS.some(js => sup.includes(js))) {
+          row._price = Math.round(row._price * JPY_TO_CAD * 100) / 100;
+          row._jpyConverted = true;
+        }
+      }
+    });
+  });
+}
+
+// Filter out non-product items (tax entries, misc, services)
+function filterNonProducts() {
+  var excludePatterns = ['MISCELLANANEOUS', 'MISCELLANEOUS', 'TAX-EX', 'TAX EX', 'SHIPPING', 'FREIGHT', 'SERVICE-FEE', 'ADJUSTMENT'];
+  ['lowStock', 'reordering', 'inventory'].forEach(key => {
+    var dataset = DATA[key];
+    if (!dataset || !dataset.length) return;
+    var before = dataset.length;
+    DATA[key] = dataset.filter(row => {
+      var sku = (row._sku || '').toUpperCase();
+      var product = (row._product || '').toUpperCase();
+      return !excludePatterns.some(p => sku.includes(p) || product.includes(p));
+    });
+    var removed = before - DATA[key].length;
+    if (removed > 0) console.log(key + ': ' + removed + ' items non-produit filtrés (tax, misc, etc.)');
+  });
+}
+
+// Aggregate multi-location rows into one row per SKU
+function aggregateBySku() {
+  ['lowStock', 'reordering', 'inventory'].forEach(key => {
+    var dataset = DATA[key];
+    if (!dataset || !dataset.length) return;
+
+    var skuMap = {};
+    dataset.forEach(row => {
+      var sku = (row._sku || '').trim();
+      if (!sku) return;
+      if (!skuMap[sku]) {
+        // Clone first occurrence as base
+        skuMap[sku] = Object.assign({}, row);
+        skuMap[sku]._available = row._available || 0;
+        skuMap[sku]._onOrder = row._onOrder || 0;
+        skuMap[sku]._reorderQty = row._reorderQty || 0;
+        skuMap[sku]._minimum = row._minimum || 0;
+      } else {
+        // Sum numeric fields across locations
+        skuMap[sku]._available += (row._available || 0);
+        skuMap[sku]._onOrder += (row._onOrder || 0);
+        skuMap[sku]._reorderQty += (row._reorderQty || 0);
+        skuMap[sku]._minimum += (row._minimum || 0);
+        // Keep highest price (same product, different locations — price should be same)
+        if ((row._price || 0) > (skuMap[sku]._price || 0)) {
+          skuMap[sku]._price = row._price;
+        }
+      }
+    });
+
+    var aggregated = Object.values(skuMap);
+    console.log(key + ': ' + dataset.length + ' rows → ' + aggregated.length + ' SKUs (agrégés par location)');
+    DATA[key] = aggregated;
+  });
+
+  // Re-link inventory reference
+  if (DATA.reordering.length > 0) DATA.inventory = DATA.reordering;
+  else DATA.inventory = DATA.lowStock;
+}
+
+function parseNum(v) {
+  if (v === undefined || v === null || v === '') return 0;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+function fmt(n) {
+  return new Intl.NumberFormat('fr-CA').format(Math.round(n));
+}
+
+function fmtMoney(n) {
+  return new Intl.NumberFormat('fr-CA', {style:'currency', currency:'CAD', maximumFractionDigits:0}).format(n);
+}
+
+// === TAB SWITCHING ===
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// === RENDER OVERVIEW ===
+function renderOverview() {
+  const ls = DATA.inventory || [];
+  const re = DATA.reordering || [];
+
+  const totalSKUs = ls.length;
+  const criticalItems = ls.filter(r => r._available <= r._minimum && r._minimum > 0);
+  const outOfStock = ls.filter(r => r._available <= 0);
+  const onOrderItems = ls.filter(r => r._onOrder > 0);
+  const totalValue = ls.reduce((sum, r) => sum + (r._available * r._price), 0);
+
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">Total SKUs</div>
+      <div class="kpi-value">${fmt(totalSKUs)}</div>
+      <div class="kpi-sub">produits suivis</div>
+    </div>
+    <div class="kpi-card kpi-danger">
+      <div class="kpi-label">Rupture de stock</div>
+      <div class="kpi-value">${fmt(outOfStock.length)}</div>
+      <div class="kpi-sub">stock ≤ 0</div>
+    </div>
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-label">Sous le minimum</div>
+      <div class="kpi-value">${fmt(criticalItems.length)}</div>
+      <div class="kpi-sub">besoin de réapprovisionnement</div>
+    </div>
+    <div class="kpi-card kpi-success">
+      <div class="kpi-label">En commande</div>
+      <div class="kpi-value">${fmt(onOrderItems.length)}</div>
+      <div class="kpi-sub">produits en transit</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Valeur totale inventaire</div>
+      <div class="kpi-value" style="font-size:22px">${fmtMoney(totalValue)}</div>
+      <div class="kpi-sub">coût d'achat</div>
+    </div>
+  `;
+
+  // Supplier stock chart
+  const supplierStock = {};
+  ls.forEach(r => {
+    const s = r._supplier || 'Inconnu';
+    supplierStock[s] = (supplierStock[s] || 0) + r._available;
+  });
+  const sorted = Object.entries(supplierStock).sort((a,b) => b[1]-a[1]).slice(0, 15);
+
+  if (charts.supplierStock) charts.supplierStock.destroy();
+  charts.supplierStock = new Chart(document.getElementById('chartSupplierStock'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(s => s[0]),
+      datasets: [{
+        data: sorted.map(s => s[1]),
+        backgroundColor: sorted.map(s => isChinaSupplier(s[0]) ? '#ef444488' : '#6366f188'),
+        borderColor: sorted.map(s => isChinaSupplier(s[0]) ? '#ef4444' : '#6366f1'),
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#2a2e3d' }, ticks: { color: '#8b8fa3' } },
+        y: { grid: { display: false }, ticks: { color: '#e4e6ef', font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Critical table
+  const critical = ls.filter(r => r._available < r._minimum && r._minimum > 0)
+    .sort((a,b) => (a._available - a._minimum) - (b._available - b._minimum))
+    .slice(0, 20);
+
+  let html = '<table><thead><tr><th>Fournisseur</th><th>Produit</th><th>SKU</th><th>Dispo</th><th>Min</th><th>Statut</th></tr></thead><tbody>';
+  critical.forEach(r => {
+    const ratio = r._minimum > 0 ? r._available / r._minimum : 1;
+    const badge = r._available <= 0 ? '<span class="badge badge-danger">RUPTURE</span>' :
+                  ratio < 0.5 ? '<span class="badge badge-danger">CRITIQUE</span>' :
+                  '<span class="badge badge-warning">BAS</span>';
+    const isChina = isChinaSupplier(r._supplier);
+    const tag = isChina ? ' <span class="supplier-tag china-tag">CHINE</span>' : '';
+    html += `<tr><td>${r._supplier||''}${tag}</td><td>${r._product||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${fmt(r._available)}</td><td>${fmt(r._minimum)}</td><td>${badge}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('criticalTable').innerHTML = html;
+
+  // Category chart
+  const catStock = {};
+  ls.forEach(r => {
+    const c = r._category || 'Autre';
+    catStock[c] = (catStock[c] || 0) + r._available;
+  });
+  const catSorted = Object.entries(catStock).sort((a,b) => b[1]-a[1]).slice(0, 12);
+  const colors = ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#3b82f6','#60a5fa','#93c5fd','#10b981','#34d399','#f59e0b','#fbbf24','#ef4444'];
+
+  if (charts.categories) charts.categories.destroy();
+  charts.categories = new Chart(document.getElementById('chartCategories'), {
+    type: 'bar',
+    data: {
+      labels: catSorted.map(c => c[0]),
+      datasets: [{
+        data: catSorted.map(c => c[1]),
+        backgroundColor: colors.map(c => c + '88'),
+        borderColor: colors,
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#e4e6ef', font: { size: 10 }, maxRotation: 45 } },
+        y: { grid: { color: '#2a2e3d' }, ticks: { color: '#8b8fa3' } }
+      }
+    }
+  });
+}
+
+// === RENDER CHINA TAB ===
+function renderChinaTab() {
+  const ls = DATA.inventory || [];
+  const chinaItems = ls.filter(r => isChinaSupplier(r._supplier));
+
+  const totalChina = chinaItems.length;
+  const chinaOOS = chinaItems.filter(r => r._available <= 0).length;
+  const chinaCritical = chinaItems.filter(r => r._available < r._minimum && r._minimum > 0).length;
+  const chinaValue = chinaItems.reduce((s, r) => s + (r._available * r._price), 0);
+  const chinaOnOrder = chinaItems.filter(r => r._onOrder > 0).length;
+
+  document.getElementById('chinaKpi').innerHTML = `
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">SKUs Chine</div>
+      <div class="kpi-value">${fmt(totalChina)}</div>
+      <div class="kpi-sub">produits de fournisseurs chinois</div>
+    </div>
+    <div class="kpi-card kpi-danger">
+      <div class="kpi-label">Rupture Chine</div>
+      <div class="kpi-value">${fmt(chinaOOS)}</div>
+      <div class="kpi-sub">lead time ~3 mois!</div>
+    </div>
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-label">Sous minimum Chine</div>
+      <div class="kpi-value">${fmt(chinaCritical)}</div>
+      <div class="kpi-sub">réapprovisionnement urgent</div>
+    </div>
+    <div class="kpi-card kpi-success">
+      <div class="kpi-label">En commande Chine</div>
+      <div class="kpi-value">${fmt(chinaOnOrder)}</div>
+      <div class="kpi-sub">en transit</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Valeur stock Chine</div>
+      <div class="kpi-value" style="font-size:22px">${fmtMoney(chinaValue)}</div>
+    </div>
+  `;
+
+  // Chart by China supplier
+  const chinaBySupplier = {};
+  const chinaOOSBySupplier = {};
+  chinaItems.forEach(r => {
+    const s = r._supplier || 'Inconnu';
+    chinaBySupplier[s] = (chinaBySupplier[s] || 0) + r._available;
+    if (r._available <= 0) chinaOOSBySupplier[s] = (chinaOOSBySupplier[s] || 0) + 1;
+  });
+
+  const chinaLabels = Object.keys(chinaBySupplier).sort();
+  if (charts.chinaSuppliers) charts.chinaSuppliers.destroy();
+  charts.chinaSuppliers = new Chart(document.getElementById('chartChinaSuppliers'), {
+    type: 'bar',
+    data: {
+      labels: chinaLabels,
+      datasets: [{
+        label: 'Stock disponible',
+        data: chinaLabels.map(l => chinaBySupplier[l]),
+        backgroundColor: '#6366f188',
+        borderColor: '#6366f1',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#e4e6ef', font: { size: 10 } } },
+        y: { grid: { color: '#2a2e3d' }, ticks: { color: '#8b8fa3' } }
+      }
+    }
+  });
+
+  // Risk table (China items below minimum)
+  const risk = chinaItems.filter(r => r._available < r._minimum && r._minimum > 0)
+    .sort((a,b) => (a._available - a._minimum) - (b._available - b._minimum));
+
+  let html = '<table><thead><tr><th>Fournisseur</th><th>Produit</th><th>SKU</th><th>Dispo</th><th>Min</th><th>En commande</th><th>Statut</th></tr></thead><tbody>';
+  if (risk.length === 0) html += '<tr><td colspan="7" style="text-align:center;color:var(--success)">Aucun produit à risque!</td></tr>';
+  risk.forEach(r => {
+    const badge = r._available <= 0 ? '<span class="badge badge-danger">RUPTURE</span>' :
+                  '<span class="badge badge-warning">BAS</span>';
+    html += `<tr><td>${r._supplier||''}</td><td>${r._product||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${fmt(r._available)}</td><td>${fmt(r._minimum)}</td><td>${fmt(r._onOrder)}</td><td>${badge}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('chinaRiskTable').innerHTML = html;
+
+  // Full China table
+  renderChinaFullTable(chinaItems);
+}
+
+function renderChinaFullTable(items) {
+  items = items || [];
+  let html = '<table id="chinaTableInner"><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>SKU</th><th>Produit</th><th>Dispo</th><th>En commande</th><th>Min</th><th>Prix</th><th>Niveau</th></tr></thead><tbody>';
+  items.sort((a,b) => a._available - b._available).forEach(r => {
+    const ratio = r._minimum > 0 ? Math.min(r._available / r._minimum, 2) : 1;
+    const pct = Math.round(ratio * 50);
+    const color = ratio <= 0 ? 'var(--danger)' : ratio < 1 ? 'var(--warning)' : 'var(--success)';
+    html += `<tr><td>${r._supplier||''}</td><td>${r._category||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${r._product||''}</td><td>${fmt(r._available)}</td><td>${fmt(r._onOrder)}</td><td>${fmt(r._minimum)}</td><td>${fmtMoney(r._price)}</td><td><div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div></div></td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('chinaFullTable').innerHTML = html;
+  window._chinaItems = items;
+}
+
+function filterChinaTable() {
+  const q = document.getElementById('chinaSearch').value.toLowerCase();
+  const items = (window._chinaItems || []).filter(r =>
+    String(r._sku||'').toLowerCase().includes(q) || String(r._product||'').toLowerCase().includes(q) || String(r._supplier||'').toLowerCase().includes(q)
+  );
+  let html = '<table><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>SKU</th><th>Produit</th><th>Dispo</th><th>En commande</th><th>Min</th><th>Prix</th><th>Niveau</th></tr></thead><tbody>';
+  items.forEach(r => {
+    const ratio = r._minimum > 0 ? Math.min(r._available / r._minimum, 2) : 1;
+    const pct = Math.round(ratio * 50);
+    const color = ratio <= 0 ? 'var(--danger)' : ratio < 1 ? 'var(--warning)' : 'var(--success)';
+    html += `<tr><td>${r._supplier||''}</td><td>${r._category||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${r._product||''}</td><td>${fmt(r._available)}</td><td>${fmt(r._onOrder)}</td><td>${fmt(r._minimum)}</td><td>${fmtMoney(r._price)}</td><td><div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div></div></td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('chinaFullTable').innerHTML = html;
+}
+
+// === LOW STOCK TAB ===
+function renderLowStockTab() {
+  const ls = DATA.inventory || [];
+  const oos = ls.filter(r => r._available <= 0);
+  const belowMin = ls.filter(r => r._available > 0 && r._available < r._minimum && r._minimum > 0);
+
+  document.getElementById('lowstockKpi').innerHTML = `
+    <div class="kpi-card kpi-danger">
+      <div class="kpi-label">Rupture totale</div>
+      <div class="kpi-value">${fmt(oos.length)}</div>
+    </div>
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-label">Sous le minimum</div>
+      <div class="kpi-value">${fmt(belowMin.length)}</div>
+    </div>
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">Total stock bas</div>
+      <div class="kpi-value">${fmt(ls.length)}</div>
+    </div>
+  `;
+
+  window._lowStockData = ls;
+  renderLowStockTable(ls);
+}
+
+function renderLowStockTable(items) {
+  let html = '<table id="lsTableInner"><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>SKU</th><th>Produit</th><th>Dispo</th><th>En commande</th><th>Min</th><th>Qté réappro</th><th>Statut</th></tr></thead><tbody>';
+  items.sort((a,b) => a._available - b._available).forEach(r => {
+    const badge = r._available <= 0 ? '<span class="badge badge-danger">RUPTURE</span>' :
+                  r._available < r._minimum ? '<span class="badge badge-warning">BAS</span>' :
+                  '<span class="badge badge-success">OK</span>';
+    const isChina = isChinaSupplier(r._supplier);
+    const tag = isChina ? ' <span class="supplier-tag china-tag">CN</span>' : '';
+    html += `<tr><td>${r._supplier||''}${tag}</td><td>${r._category||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${r._product||''}</td><td>${fmt(r._available)}</td><td>${fmt(r._onOrder)}</td><td>${fmt(r._minimum)}</td><td>${fmt(r._reorderQty)}</td><td>${badge}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('lowstockTable').innerHTML = html;
+}
+
+function filterLowStockTable() {
+  const q = document.getElementById('lowstockSearch').value.toLowerCase();
+  const items = (window._lowStockData || []).filter(r =>
+    String(r._sku||'').toLowerCase().includes(q) || String(r._product||'').toLowerCase().includes(q) || String(r._supplier||'').toLowerCase().includes(q) || String(r._category||'').toLowerCase().includes(q)
+  );
+  renderLowStockTable(items);
+}
+
+// === REORDER TAB ===
+function renderReorderTab() {
+  const re = DATA.reordering || [];
+  re.forEach(row => {
+    const keys = Object.keys(row);
+    keys.forEach(k => {
+      const kl = k.toLowerCase();
+      if (kl === 'category') row._category = row[k];
+      if (kl === 'supplier') row._supplier = row[k];
+      if (kl === 'sku') row._sku = row[k];
+      if (kl === 'product') row._product = row[k];
+      if (kl.includes('available')) row._available = parseNum(row[k]);
+      if (kl.includes('on order')) row._onOrder = parseNum(row[k]);
+      if (kl.includes('reorder')) row._reorderQty = parseNum(row[k]);
+      if (kl.includes('minimum')) row._minimum = parseNum(row[k]);
+    });
+    if (row._category === undefined) {
+      const vals = Object.values(row);
+      row._category = row._category || vals[0];
+      row._supplier = row._supplier || vals[1];
+      row._sku = row._sku || vals[2];
+      row._product = row._product || vals[3];
+    }
+  });
+
+  document.getElementById('reorderKpi').innerHTML = `
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-label">Produits à réapprovisionner</div>
+      <div class="kpi-value">${fmt(re.length)}</div>
+    </div>
+  `;
+
+  window._reorderData = re;
+  renderReorderTable(re);
+}
+
+function renderReorderTable(items) {
+  let html = '<table><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>SKU</th><th>Produit</th><th>Dispo</th><th>En commande</th><th>Min</th><th>Qté réappro</th></tr></thead><tbody>';
+  items.forEach(r => {
+    const isChina = isChinaSupplier(r._supplier);
+    const tag = isChina ? ' <span class="supplier-tag china-tag">CN</span>' : '';
+    html += `<tr><td>${r._supplier||''}${tag}</td><td>${r._category||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${r._product||''}</td><td>${fmt(r._available||0)}</td><td>${fmt(r._onOrder||0)}</td><td>${fmt(r._minimum||0)}</td><td>${fmt(r._reorderQty||0)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('reorderTable').innerHTML = html;
+}
+
+function filterReorderTable() {
+  const q = document.getElementById('reorderSearch').value.toLowerCase();
+  const items = (window._reorderData || []).filter(r =>
+    String(r._sku||'').toLowerCase().includes(q) || String(r._product||'').toLowerCase().includes(q) || String(r._supplier||'').toLowerCase().includes(q)
+  );
+  renderReorderTable(items);
+}
+
+// === PURCHASES TAB ===
+function renderPurchasesTab() {
+  const po = DATA.purchaseOrders || [];
+  const ss = DATA.supplierSummary || [];
+
+  // Normalize supplier summary
+  ss.forEach(row => {
+    const keys = Object.keys(row);
+    keys.forEach(k => {
+      const kl = k.toLowerCase();
+      if (kl === 'supplier' || kl.includes('supplier')) row._supplier = row[k];
+      if (kl.includes('total') || kl.includes('amount') || kl.includes('grand')) {
+        if (row._total === undefined) row._total = parseNum(row[k]);
+      }
+    });
+    if (row._supplier === undefined) {
+      const vals = Object.values(row);
+      row._supplier = vals[0];
+      row._total = parseNum(vals[1]) || parseNum(vals[2]) || 0;
+    }
+  });
+
+  const totalPO = po.length;
+  const totalSpend = ss.reduce((s, r) => s + (r._total || 0), 0);
+
+  document.getElementById('purchaseKpi').innerHTML = `
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">Lignes de commande</div>
+      <div class="kpi-value">${fmt(totalPO)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total dépenses fournisseurs</div>
+      <div class="kpi-value" style="font-size:22px">${fmtMoney(totalSpend)}</div>
+    </div>
+    <div class="kpi-card kpi-info">
+      <div class="kpi-label">Nombre de fournisseurs</div>
+      <div class="kpi-value">${fmt(ss.length)}</div>
+    </div>
+  `;
+
+  // Chart
+  const topSuppliers = ss.filter(r => r._total > 0).sort((a,b) => (b._total||0) - (a._total||0)).slice(0, 10);
+
+  if (charts.purchaseSuppliers) charts.purchaseSuppliers.destroy();
+  if (topSuppliers.length > 0) {
+    charts.purchaseSuppliers = new Chart(document.getElementById('chartPurchaseSuppliers'), {
+      type: 'bar',
+      data: {
+        labels: topSuppliers.map(s => s._supplier || 'Inconnu'),
+        datasets: [{
+          data: topSuppliers.map(s => s._total || 0),
+          backgroundColor: '#10b98188',
+          borderColor: '#10b981',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#2a2e3d' }, ticks: { color: '#8b8fa3', callback: v => fmtMoney(v) } },
+          y: { grid: { display: false }, ticks: { color: '#e4e6ef', font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  // Supplier summary table
+  let html = '<table><thead><tr><th>Fournisseur</th><th>Total</th></tr></thead><tbody>';
+  ss.sort((a,b) => (b._total||0) - (a._total||0)).slice(0, 20).forEach(r => {
+    const isChina = isChinaSupplier(r._supplier);
+    const tag = isChina ? ' <span class="supplier-tag china-tag">CN</span>' : '';
+    html += `<tr><td>${r._supplier||''}${tag}</td><td>${fmtMoney(r._total||0)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('supplierSummaryTable').innerHTML = html;
+}
+
+// === ACCOUNTS RECEIVABLE TAB ===
+function renderARTab() {
+  var cp = DATA.customerPayments || [];
+
+  // Normalize columns
+  cp.forEach(function(row) {
+    var keys = Object.keys(row);
+    keys.forEach(function(k) {
+      var kl = String(k).toLowerCase().trim();
+      if (kl === 'customer') row._customer = String(row[k] || '').trim();
+      if (kl === 'customer tags') row._tags = String(row[k] || '').trim();
+      if (kl.includes('last invoice')) row._lastInvoice = row[k];
+      if (kl.includes('last payment')) row._lastPayment = row[k];
+      if (kl.includes('total invoice')) row._totalInvoice = parseNum(row[k]);
+      if (kl.includes('total paid')) row._totalPaid = parseNum(row[k]);
+      if (kl.includes('due') || kl.includes('credit')) row._due = parseNum(row[k]);
+      if (kl.includes('fx') || kl.includes('gain')) row._fx = parseNum(row[k]);
+    });
+    if (row._customer === undefined) {
+      var vals = Object.values(row);
+      row._tags = String(vals[0] || '');
+      row._customer = String(vals[1] || '').trim();
+      row._lastInvoice = vals[2];
+      row._lastPayment = vals[3];
+      row._totalInvoice = parseNum(vals[4]);
+      row._totalPaid = parseNum(vals[5]);
+      row._due = parseNum(vals[6]);
+      row._fx = parseNum(vals[7]);
+    }
+  });
+
+  // Filter clients with outstanding balance
+  var owing = cp.filter(function(r) { return r._due > 0; }).sort(function(a, b) { return b._due - a._due; });
+  var totalDue = owing.reduce(function(s, r) { return s + r._due; }, 0);
+  var totalInvoiced = cp.reduce(function(s, r) { return s + (r._totalInvoice || 0); }, 0);
+  var totalPaid = cp.reduce(function(s, r) { return s + (r._totalPaid || 0); }, 0);
+
+  // Late payments (last invoice > 30 days ago)
+  var now = new Date();
+  var late = owing.filter(function(r) {
+    if (!r._lastInvoice) return false;
+    var d = new Date(r._lastInvoice);
+    if (isNaN(d.getTime())) return false;
+    return (now - d) > 30 * 24 * 60 * 60 * 1000;
+  });
+
+  document.getElementById('arKpi').innerHTML =
+    '<div class="kpi-card kpi-danger">' +
+      '<div class="kpi-label">Total à recevoir</div>' +
+      '<div class="kpi-value">' + fmtMoney(totalDue) + '</div>' +
+      '<div class="kpi-sub">' + fmt(owing.length) + ' clients</div>' +
+    '</div>' +
+    '<div class="kpi-card kpi-warning">' +
+      '<div class="kpi-label">En retard (30+ jours)</div>' +
+      '<div class="kpi-value">' + fmt(late.length) + '</div>' +
+      '<div class="kpi-sub">' + fmtMoney(late.reduce(function(s,r){return s+r._due},0)) + '</div>' +
+    '</div>' +
+    '<div class="kpi-card kpi-info">' +
+      '<div class="kpi-label">Total facturé</div>' +
+      '<div class="kpi-value" style="font-size:22px">' + fmtMoney(totalInvoiced) + '</div>' +
+    '</div>' +
+    '<div class="kpi-card kpi-success">' +
+      '<div class="kpi-label">Total payé</div>' +
+      '<div class="kpi-value" style="font-size:22px">' + fmtMoney(totalPaid) + '</div>' +
+    '</div>' +
+    '<div class="kpi-card">' +
+      '<div class="kpi-label">Taux de recouvrement</div>' +
+      '<div class="kpi-value">' + (totalInvoiced > 0 ? Math.round(totalPaid / totalInvoiced * 100) : 0) + '%</div>' +
+    '</div>';
+
+  // Top 15 chart
+  var top15 = owing.slice(0, 15);
+  if (charts.ar) charts.ar.destroy();
+  charts.ar = new Chart(document.getElementById('chartAR'), {
+    type: 'bar',
+    data: {
+      labels: top15.map(function(r) { return r._customer || 'Inconnu'; }),
+      datasets: [{
+        data: top15.map(function(r) { return r._due; }),
+        backgroundColor: '#ef444488',
+        borderColor: '#ef4444',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#2a2e3d' }, ticks: { color: '#8b8fa3', callback: function(v) { return fmtMoney(v); } } },
+        y: { grid: { display: false }, ticks: { color: '#e4e6ef', font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Late payments table
+  var html = '<table><thead><tr><th>Client</th><th>Dernière facture</th><th>Dernier paiement</th><th>Facturé</th><th>Payé</th><th>Dû</th></tr></thead><tbody>';
+  if (late.length === 0) html += '<tr><td colspan="6" style="text-align:center;color:var(--success)">Aucun retard!</td></tr>';
+  late.slice(0, 25).forEach(function(r) {
+    html += '<tr><td>' + (r._customer || '') + '</td><td style="color:var(--text-muted)">' + fmtDate(r._lastInvoice) + '</td><td style="color:var(--text-muted)">' + fmtDate(r._lastPayment) + '</td><td>' + fmtMoney(r._totalInvoice) + '</td><td>' + fmtMoney(r._totalPaid) + '</td><td style="color:var(--danger);font-weight:600">' + fmtMoney(r._due) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('arLateTable').innerHTML = html;
+
+  // Full table
+  window._arData = owing;
+  renderARFullTable(owing);
+}
+
+function fmtDate(v) {
+  if (!v) return '—';
+  var d = new Date(v);
+  if (isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString('fr-CA');
+}
+
+function renderARFullTable(items) {
+  var html = '<table><thead><tr><th>Client</th><th>Tags</th><th>Dernière facture</th><th>Dernier paiement</th><th>Facturé</th><th>Payé</th><th>Dû</th><th>Jours</th></tr></thead><tbody>';
+  var now = new Date();
+  items.forEach(function(r) {
+    var d = new Date(r._lastInvoice);
+    var days = !isNaN(d.getTime()) ? Math.round((now - d) / (24*60*60*1000)) : '—';
+    var daysBadge = days !== '—' && days > 60 ? '<span class="badge badge-danger">' + days + 'j</span>' :
+                    days !== '—' && days > 30 ? '<span class="badge badge-warning">' + days + 'j</span>' :
+                    '<span class="badge badge-success">' + days + 'j</span>';
+    html += '<tr><td>' + (r._customer || '') + '</td><td style="color:var(--text-muted)">' + (r._tags || '') + '</td><td>' + fmtDate(r._lastInvoice) + '</td><td>' + fmtDate(r._lastPayment) + '</td><td>' + fmtMoney(r._totalInvoice) + '</td><td>' + fmtMoney(r._totalPaid) + '</td><td style="color:var(--danger);font-weight:600">' + fmtMoney(r._due) + '</td><td>' + daysBadge + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('arFullTable').innerHTML = html;
+}
+
+function filterARTable() {
+  var q = document.getElementById('arSearch').value.toLowerCase();
+  var items = (window._arData || []).filter(function(r) {
+    return String(r._customer || '').toLowerCase().includes(q) || String(r._tags || '').toLowerCase().includes(q);
+  });
+  renderARFullTable(items);
+}
+
+// === CLIENTS TAB ===
+var _clientsCurrentView = 'top';
+
+function renderClientsTab() {
+  var cp = DATA.customerPayments || [];
+  var now = new Date();
+
+  // Normalize if not already done by AR tab
+  cp.forEach(function(row) {
+    if (row._customer !== undefined) return;
+    var keys = Object.keys(row);
+    keys.forEach(function(k) {
+      var kl = String(k).toLowerCase().trim();
+      if (kl === 'customer') row._customer = String(row[k] || '').trim();
+      if (kl === 'customer tags') row._tags = String(row[k] || '').trim();
+      if (kl.includes('last invoice')) row._lastInvoice = row[k];
+      if (kl.includes('last payment')) row._lastPayment = row[k];
+      if (kl.includes('total invoice')) row._totalInvoice = parseNum(row[k]);
+      if (kl.includes('total paid')) row._totalPaid = parseNum(row[k]);
+      if (kl.includes('due') || kl.includes('credit')) row._due = parseNum(row[k]);
+    });
+    if (row._customer === undefined) {
+      var vals = Object.values(row);
+      row._tags = String(vals[0] || '');
+      row._customer = String(vals[1] || '').trim();
+      row._lastInvoice = vals[2];
+      row._lastPayment = vals[3];
+      row._totalInvoice = parseNum(vals[4]);
+      row._totalPaid = parseNum(vals[5]);
+      row._due = parseNum(vals[6]);
+    }
+  });
+
+  // Classify clients
+  var valid = cp.filter(function(r) { return r._customer && r._customer.length > 0; });
+
+  window._topClients = valid.filter(function(r) { return r._totalInvoice > 0; })
+    .sort(function(a, b) { return b._totalInvoice - a._totalInvoice; });
+
+  // Clients à développer: actifs (dernière facture < 180j), petits montants mais potentiel
+  var median = 0;
+  var invoiced = valid.filter(function(r){return r._totalInvoice > 0}).map(function(r){return r._totalInvoice}).sort(function(a,b){return a-b});
+  if (invoiced.length > 0) median = invoiced[Math.floor(invoiced.length / 2)];
+
+  window._growClients = valid.filter(function(r) {
+    var d = new Date(r._lastInvoice);
+    if (isNaN(d.getTime())) return false;
+    var daysSince = (now - d) / (24*60*60*1000);
+    return daysSince <= 180 && r._totalInvoice > 0 && r._totalInvoice < median;
+  }).sort(function(a, b) {
+    return b._totalInvoice - a._totalInvoice;
+  });
+
+  window._dormantClients = valid.filter(function(r) {
+    var d = new Date(r._lastInvoice);
+    if (isNaN(d.getTime())) return false;
+    var daysSince = (now - d) / (24*60*60*1000);
+    return daysSince > 90 && r._totalInvoice >= 100;
+  }).sort(function(a, b) {
+    return new Date(a._lastInvoice) - new Date(b._lastInvoice);
+  });
+
+  // KPIs
+  document.getElementById('clientsKpi').innerHTML =
+    '<div class="kpi-card kpi-info">' +
+      '<div class="kpi-label">Total clients</div>' +
+      '<div class="kpi-value">' + fmt(valid.length) + '</div>' +
+    '</div>' +
+    '<div class="kpi-card kpi-success">' +
+      '<div class="kpi-label">Top clients (500$+)</div>' +
+      '<div class="kpi-value">' + fmt(window._topClients.filter(function(r){return r._totalInvoice>=500}).length) + '</div>' +
+      '<div class="kpi-sub">' + fmtMoney(window._topClients.reduce(function(s,r){return s+r._totalInvoice},0)) + ' facturé</div>' +
+    '</div>' +
+    '<div class="kpi-card" style="border-left:3px solid var(--accent)">' +
+      '<div class="kpi-label">Clients à développer</div>' +
+      '<div class="kpi-value" style="color:var(--accent-light)">' + fmt(window._growClients.length) + '</div>' +
+      '<div class="kpi-sub">actifs, sous la médiane (' + fmtMoney(median) + ')</div>' +
+    '</div>' +
+    '<div class="kpi-card kpi-warning">' +
+      '<div class="kpi-label">En voie d\'oubli (90j+ inactif)</div>' +
+      '<div class="kpi-value">' + fmt(window._dormantClients.length) + '</div>' +
+      '<div class="kpi-sub">' + fmtMoney(window._dormantClients.reduce(function(s,r){return s+r._totalInvoice},0)) + ' de revenus à risque</div>' +
+    '</div>';
+
+  filterClientsView('top');
+}
+
+function filterClientsView(view) {
+  _clientsCurrentView = view;
+
+  // Update filter buttons
+  document.querySelectorAll('#clientsFilters .filter-btn').forEach(function(btn) {
+    btn.classList.remove('active');
+    if (btn.textContent.toLowerCase().includes(view === 'top' ? 'top' : view === 'grow' ? 'développer' : 'oubli')) btn.classList.add('active');
+  });
+
+  var items, chartColor, chartTitle, summaryTitle, tableTitle, dotClass;
+
+  if (view === 'top') {
+    items = window._topClients || [];
+    chartColor = '#10b981';
+    chartTitle = 'Top 15 clients par revenu';
+    summaryTitle = 'Meilleurs clients';
+    tableTitle = 'Tous les clients — par revenu';
+    dotClass = 'dot-success';
+  } else if (view === 'grow') {
+    items = window._growClients || [];
+    chartColor = '#6366f1';
+    chartTitle = 'Clients à développer — sous la médiane, actifs';
+    summaryTitle = 'Potentiel de croissance';
+    tableTitle = 'Clients actifs (180j) sous la médiane de facturation';
+    dotClass = 'dot-info';
+  } else {
+    items = window._dormantClients || [];
+    chartColor = '#f59e0b';
+    chartTitle = 'Clients en voie d\'oubli — inactifs 90j+';
+    summaryTitle = 'Clients à relancer';
+    tableTitle = 'Clients dormants (inactifs 90j+, avaient 100$+ de business)';
+    dotClass = 'dot-warning';
+  }
+
+  document.getElementById('clientsChartTitle').innerHTML = '<span class="dot ' + dotClass + '"></span>' + chartTitle;
+  document.getElementById('clientsSummaryTitle').innerHTML = '<span class="dot ' + dotClass + '"></span>' + summaryTitle;
+  document.getElementById('clientsTableTitle').innerHTML = '<span class="dot ' + dotClass + '"></span>' + tableTitle;
+
+  // Chart
+  var top15 = items.slice(0, 15);
+  if (charts.clients) charts.clients.destroy();
+  charts.clients = new Chart(document.getElementById('chartClients'), {
+    type: 'bar',
+    data: {
+      labels: top15.map(function(r) { return r._customer || 'Inconnu'; }),
+      datasets: [{
+        data: top15.map(function(r) { return r._totalInvoice; }),
+        backgroundColor: chartColor + '88',
+        borderColor: chartColor,
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#2a2e3d' }, ticks: { color: '#8b8fa3', callback: function(v) { return fmtMoney(v); } } },
+        y: { grid: { display: false }, ticks: { color: '#e4e6ef', font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Summary panel
+  var now = new Date();
+  var html = '<table><thead><tr><th>Client</th><th>Dernière facture</th><th>Facturé</th><th>Dû</th></tr></thead><tbody>';
+  items.slice(0, 20).forEach(function(r) {
+    var d = new Date(r._lastInvoice);
+    var days = !isNaN(d.getTime()) ? Math.round((now - d) / (24*60*60*1000)) : null;
+    var daysText = days !== null ? days + 'j' : '—';
+    var dueColor = r._due > 0 ? 'color:var(--danger);font-weight:600' : 'color:var(--success)';
+    html += '<tr><td>' + (r._customer || '') + '</td><td style="color:var(--text-muted)">' + fmtDate(r._lastInvoice) + ' <small>(' + daysText + ')</small></td><td>' + fmtMoney(r._totalInvoice) + '</td><td style="' + dueColor + '">' + fmtMoney(r._due) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('clientsSummaryPanel').innerHTML = html;
+
+  // Full table
+  window._clientsFiltered = items;
+  renderClientsFullTable(items);
+}
+
+function renderClientsFullTable(items) {
+  var now = new Date();
+  var html = '<table><thead><tr><th>Client</th><th>Tags</th><th>Dernière facture</th><th>Dernier paiement</th><th>Facturé</th><th>Payé</th><th>Dû</th><th>Inactivité</th></tr></thead><tbody>';
+  items.forEach(function(r) {
+    var d = new Date(r._lastInvoice);
+    var days = !isNaN(d.getTime()) ? Math.round((now - d) / (24*60*60*1000)) : null;
+    var daysBadge = days === null ? '—' :
+                    days > 180 ? '<span class="badge badge-danger">' + days + 'j</span>' :
+                    days > 90 ? '<span class="badge badge-warning">' + days + 'j</span>' :
+                    '<span class="badge badge-success">' + days + 'j</span>';
+    var dueStyle = r._due > 0 ? 'color:var(--danger);font-weight:600' : '';
+    html += '<tr><td>' + (r._customer || '') + '</td><td style="color:var(--text-muted)">' + (r._tags || '') + '</td><td>' + fmtDate(r._lastInvoice) + '</td><td>' + fmtDate(r._lastPayment) + '</td><td>' + fmtMoney(r._totalInvoice) + '</td><td>' + fmtMoney(r._totalPaid) + '</td><td style="' + dueStyle + '">' + fmtMoney(r._due) + '</td><td>' + daysBadge + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('clientsFullTable').innerHTML = html;
+}
+
+function filterClientsSearch() {
+  var q = document.getElementById('clientsSearch').value.toLowerCase();
+  var items = (window._clientsFiltered || []).filter(function(r) {
+    return String(r._customer || '').toLowerCase().includes(q) || String(r._tags || '').toLowerCase().includes(q);
+  });
+  renderClientsFullTable(items);
+}
+
+// === INIT ===
+loadAllData();
+</script>
+</body>
+</html>
