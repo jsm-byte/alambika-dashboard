@@ -482,7 +482,7 @@
 
 <script>
 // === DATA SOURCE ===
-const API_URL = 'https://script.google.com/macros/s/AKfycbzYpQBVqN5TIBYGHesaRUaOWEgf5tEPurIjuP0cP-HM_iQkriW9LwKOZYO5bq5Aptu1JA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx7kvv0r_NLcEHLW27xF-pgCjrqmKT33_AYwhmGL4PA7etBSG8xVRNh61_5qbOoXws/exec';
 
 const CHINA_SUPPLIERS = ['CQJIAN CCS', 'JIA CS', 'SEN CS', 'HGC CS', 'JAT CS', 'YUN CS'];
 function isChinaSupplier(name) {
@@ -507,7 +507,7 @@ function loadAllData() {
 
   var script = document.createElement('script');
   script.id = 'dataScript';
-  script.src = API_URL + '?mode=api&callback=handleData&t=' + Date.now();
+  script.src = API_URL + '?callback=handleData&t=' + Date.now();
   script.onerror = function() {
     document.getElementById('lastUpdate').textContent = 'Erreur de chargement — vérifiez le déploiement Apps Script';
   };
