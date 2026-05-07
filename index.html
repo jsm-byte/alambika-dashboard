@@ -507,7 +507,7 @@ function loadAllData() {
 
   var script = document.createElement('script');
   script.id = 'dataScript';
-  script.src = API_URL + '?callback=handleData&t=' + Date.now();
+  script.src = API_URL + '?mode=api&callback=handleData&t=' + Date.now();
   script.onerror = function() {
     document.getElementById('lastUpdate').textContent = 'Erreur de chargement — vérifiez le déploiement Apps Script';
   };
