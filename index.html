@@ -386,7 +386,12 @@
   <div class="grid-full">
     <div class="panel">
       <div class="panel-title"><span class="dot dot-info"></span>Tous les produits — Fournisseurs Chine</div>
-      <input type="text" class="search-input" id="chinaSearch" placeholder="Rechercher SKU, produit..." oninput="filterChinaTable()">
+      <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+        <select id="chinaSupplierFilter" class="search-input" style="width:auto; min-width:200px; cursor:pointer;" onchange="filterChinaTable()">
+          <option value="">Tous les fournisseurs</option>
+        </select>
+        <input type="text" class="search-input" id="chinaSearch" placeholder="Rechercher SKU, produit..." oninput="filterChinaTable()" style="flex:1; min-width:200px;">
+      </div>
       <div class="table-wrap" id="chinaFullTable" style="max-height:500px"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
     </div>
   </div>
@@ -931,6 +936,22 @@ function renderChinaTab() {
 
 function renderChinaFullTable(items) {
   items = items || [];
+  window._chinaItems = items;
+
+  // Populate supplier dropdown
+  var suppliers = [...new Set(items.map(r => r._supplier || 'Inconnu'))].sort();
+  var dd = document.getElementById('chinaSupplierFilter');
+  var currentVal = dd.value;
+  dd.innerHTML = '<option value="">Tous les fournisseurs (' + items.length + ')</option>';
+  suppliers.forEach(s => {
+    var count = items.filter(r => (r._supplier||'') === s).length;
+    dd.innerHTML += '<option value="' + s + '"' + (s === currentVal ? ' selected' : '') + '>' + s + ' (' + count + ')</option>';
+  });
+
+  displayChinaTable(items);
+}
+
+function displayChinaTable(items) {
   let html = '<table id="chinaTableInner"><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>SKU</th><th>Produit</th><th>Dispo</th><th>En commande</th><th>Min</th><th>Prix</th><th>Niveau</th></tr></thead><tbody>';
   items.sort((a,b) => a._available - b._available).forEach(r => {
     const ratio = r._minimum > 0 ? Math.min(r._available / r._minimum, 2) : 1;
@@ -940,23 +961,17 @@ function renderChinaFullTable(items) {
   });
   html += '</tbody></table>';
   document.getElementById('chinaFullTable').innerHTML = html;
-  window._chinaItems = items;
 }
 
 function filterChinaTable() {
   const q = document.getElementById('chinaSearch').value.toLowerCase();
-  const items = (window._chinaItems || []).filter(r =>
-    String(r._sku||'').toLowerCase().includes(q) || String(r._product||'').toLowerCase().includes(q) || String(r._supplier||'').toLowerCase().includes(q)
+  const supplier = document.getElementById('chinaSupplierFilter').value;
+  var items = window._chinaItems || [];
+  if (supplier) items = items.filter(r => (r._supplier||'') === supplier);
+  if (q) items = items.filter(r =>
+    String(r._sku||'').toLowerCase().includes(q) || String(r._product||'').toLowerCase().includes(q)
   );
-  let html = '<table><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>SKU</th><th>Produit</th><th>Dispo</th><th>En commande</th><th>Min</th><th>Prix</th><th>Niveau</th></tr></thead><tbody>';
-  items.forEach(r => {
-    const ratio = r._minimum > 0 ? Math.min(r._available / r._minimum, 2) : 1;
-    const pct = Math.round(ratio * 50);
-    const color = ratio <= 0 ? 'var(--danger)' : ratio < 1 ? 'var(--warning)' : 'var(--success)';
-    html += `<tr><td>${r._supplier||''}</td><td>${r._category||''}</td><td style="color:var(--text-muted)">${r._sku||''}</td><td>${r._product||''}</td><td>${fmt(r._available)}</td><td>${fmt(r._onOrder)}</td><td>${fmt(r._minimum)}</td><td>${fmtMoney(r._price)}</td><td><div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div></div></td></tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('chinaFullTable').innerHTML = html;
+  displayChinaTable(items);
 }
 
 // === LOW STOCK TAB ===
